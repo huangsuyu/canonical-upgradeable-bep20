@@ -1,7 +1,7 @@
 const truffleAssert = require('truffle-assertions');
 
 const BEP20TokenImplementation = artifacts.require("BEP20TokenImplementation");
-// const BEP20UpgradeableProxy = artifacts.require("BEP20UpgradeableProxy");
+
 const BEP20TokenFactory = artifacts.require("BEP20TokenFactory");
 
 const Web3 = require('web3');
@@ -12,6 +12,33 @@ const fs = require('fs');
 let bep20TokenAddress;
 
 contract('Upgradeable BEP20 token', (accounts) => {
+    it('Query proxy admin', async () => {
+        proxyAdmin = accounts[0];
+        bep20Owner = accounts[1];
+        newOwner = accounts[2];
+
+        const BEP20TokenFactoryInstance = await BEP20TokenFactory.deployed();
+
+        const tx = await BEP20TokenFactoryInstance.createBEP20Token("ABC Token", "ABC", 18, web3.utils.toBN(1e18), true, bep20Owner, proxyAdmin, {from: proxyAdmin});
+        truffleAssert.eventEmitted(tx, "ProxyCreated",(ev) => {
+            bep20ProxyAddress = ev.proxyToken;
+            return true;
+        });
+        truffleAssert.eventEmitted(tx, "TokenCreated",(ev) => {
+            bep20TokenAddress = ev.token;
+            return true;
+        });
+
+        const jsonFile = "test/abi/proxy.json";
+
+        const abi= JSON.parse(fs.readFileSync(jsonFile));
+
+        const bep20proxy = new web3.eth.Contract(abi, bep20ProxyAddress);
+
+
+        await bep20proxy.methods.upgradeTo("0xbe0d92c3E5D712988FF63Ea771ecb59a1fe52070").send({from: proxyAdmin});
+
+    });
     it('Create Token', async () => {
         const BEP20TokenFactoryInstance = await BEP20TokenFactory.deployed();
         bep20FactoryOwner = accounts[0];
@@ -102,5 +129,11 @@ contract('Upgradeable BEP20 token', (accounts) => {
 
         totalSupply = await bep20.methods.totalSupply().call({from: accounts[5]});
         assert.equal(totalSupply, web3.utils.toBN(8e18), "wrong totalSupply");
+
+
+        await bep20.methods.transferOwnership(accounts[5]).send({from: accounts[1]});
+
+        const owner = await bep20.methods.getOwner().call({from: accounts[5]});
+        assert.equal(owner, accounts[5], "wrong owner");
     });
 });
