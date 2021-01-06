@@ -34,10 +34,39 @@ contract('Upgradeable BEP20 token', (accounts) => {
 
         const newInstance = await BEP20TokenImplementation.new({from: proxyAdmin});
 
-        let result = await bep20proxy.methods.upgradeTo(newInstance.address).send({from: proxyAdmin});
-        truffleAssert.eventEmitted(result, "Upgraded",(ev) => {
+        let event = await bep20proxy.methods.upgradeTo(newInstance.address).send({from: proxyAdmin});
+        // truffleAssert.eventEmitted(result, "Upgraded",(ev) => {
+        //     return true;
+        // });
+        bep20proxy.getPastEvents("Upgraded", {fromBlock: 0, toBlock: "latest"}).then(console.log)
+
+
+    });
+     it('Change Proxy Admin', async () => {
+        proxyAdmin = accounts[0];
+        bep20Owner = accounts[1];
+        newAdmin = accounts[2];
+
+        const BEP20TokenFactoryInstance = await BEP20TokenFactory.deployed();
+
+        const tx = await BEP20TokenFactoryInstance.createBEP20Token("ABC Token", "ABC", 18, web3.utils.toBN(1e18), true, bep20Owner, proxyAdmin, {from: proxyAdmin});
+
+        truffleAssert.eventEmitted(tx, "TokenCreated",(ev) => {
+            bep20TokenAddress = ev.token;
             return true;
         });
+
+        const jsonFile = "test/abi/proxy.json";
+
+        const abi= JSON.parse(fs.readFileSync(jsonFile));
+
+        const bep20proxy = new web3.eth.Contract(abi, bep20TokenAddress);
+
+
+        let event = await bep20proxy.methods.changeAdmin(newAdmin).send({from: proxyAdmin});
+
+        bep20proxy.getPastEvents("AdminChanged", {fromBlock: 0, toBlock: "latest"}).then(console.log)
+
 
     });
     it('Create Token', async () => {
