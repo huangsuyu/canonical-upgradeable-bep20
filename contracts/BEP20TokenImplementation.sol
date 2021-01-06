@@ -1,9 +1,9 @@
 pragma solidity ^0.6.0;
 
 import "./IBEP20.sol";
-import "openzeppelin-solidity/contracts/GSN/Context.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 
 contract BEP20TokenImplementation is Context, IBEP20, Initializable {
     using SafeMath for uint256;

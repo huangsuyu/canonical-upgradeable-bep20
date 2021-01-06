@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "openzeppelin-solidity/contracts/proxy/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 
 contract BEP20UpgradeableProxy is TransparentUpgradeableProxy {
 
