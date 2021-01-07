@@ -1,6 +1,7 @@
 const truffleAssert = require('truffle-assertions');
 
 const BEP20TokenImplementation = artifacts.require("BEP20TokenImplementation");
+const NewImplementation = artifacts.require("NewImplementation");
 
 const BEP20TokenFactory = artifacts.require("BEP20TokenFactory");
 
@@ -32,13 +33,25 @@ contract('Upgradeable BEP20 token', (accounts) => {
 
         const bep20proxy = new web3.eth.Contract(abi, bep20TokenAddress);
 
-        const newInstance = await BEP20TokenImplementation.new({from: proxyAdmin});
+        const newInstance = await NewImplementation.new({from: proxyAdmin});
 
-        let event = await bep20proxy.methods.upgradeTo(newInstance.address).send({from: proxyAdmin});
-        // truffleAssert.eventEmitted(result, "Upgraded",(ev) => {
-        //     return true;
-        // });
+        await newInstance.initialize("Hello Token", "Hello", 18, web3.utils.toBN(1e19), true, bep20Owner);
+
+        //const proxyInstance = await BEP20TokenFactory.new(newInstance.address);
+
+        let tx2 = await bep20proxy.methods.upgradeTo(newInstance.address).send({from: proxyAdmin});
+
         bep20proxy.getPastEvents("Upgraded", {fromBlock: 0, toBlock: "latest"}).then(console.log)
+
+
+        const bepFile = "test/abi/BEP20Implementation.json";
+
+        const implabi= JSON.parse(fs.readFileSync(bepFile));
+
+        const bep20 = new web3.eth.Contract(implabi, newInstance.address);
+
+        const name = await bep20.methods.name().call({from: bep20Owner});
+        assert.equal(name, "Hello Token", "wrong token name");
 
 
     });
@@ -66,7 +79,6 @@ contract('Upgradeable BEP20 token', (accounts) => {
         let event = await bep20proxy.methods.changeAdmin(newAdmin).send({from: proxyAdmin});
 
         bep20proxy.getPastEvents("AdminChanged", {fromBlock: 0, toBlock: "latest"}).then(console.log)
-
 
     });
     it('Create Token', async () => {
